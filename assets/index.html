@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-4">
+            <div class="container text-center">
+        <h1>URL Shortener 💫</h1>
+
+        <p class="text-secondary">This is a simple serverless URL shortener build with the power of WebAssembly and
+            Fermyon Spin 🎉</p>
+            </div>
+        <div class="d-flex flex-row mt-r">
+            <input type="url" class="form-control" placeholder="https://example.com" id="url">
+            <button type="button" class="btn btn-primary" id="shorten">Shorten</button>
+        </div>
+        <div class="text-center mt-5">
+        <h3>All Links</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Short</th>
+                        <th>Target</th>
+                    </tr>
+                </thead>
+                <tbody id="links"></tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        const loadLinks = async () => {
+            const response = await fetch("/links", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+            if (!response.ok) {
+                console.log("Error loading links");
+                return;
+            }
+            const links = await response.json();
+            const table = document.getElementById("links");
+            table.innerHTML = "";
+            for (const [key, value] of Object.entries(links)) {
+                const row = document.createElement("tr");
+                const keyCell = document.createElement("td");
+                const link = document.createElement("a");
+                const valueCell = document.createElement("td");
+                link.innerText = key;
+                link.href = `/${key}`;
+                link.target = "_blank";
+                keyCell.appendChild(link);
+                valueCell.innerText = value;
+                row.appendChild(keyCell);
+                row.appendChild(valueCell);
+                table.appendChild(row);
+            }
+        };
+
+        const createLink = async (url) => {
+            if (!url) {
+                return false;
+            }
+            const response = await fetch("/links", {
+                method: "POST",
+                body: JSON.stringify({
+                    url: url
+                }),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+            if (response.ok) {
+                await loadLinks();
+                return true;
+            }
+            else {
+                console.log("Error creating link");
+                return false;
+            }
+        }
+        document.addEventListener("DOMContentLoaded", async () => {
+            const shorten = document.getElementById("shorten");
+            const url = document.getElementById("url");
+            shorten.addEventListener("click", async (e) => {
+                const success = await createLink(url.value);
+                if (success) {
+                    url.value = "";
+                }
+                e.preventDefault();
+                return false;
+            });
+            await loadLinks();
+        });
+    </script>
+</body>
+</html>
